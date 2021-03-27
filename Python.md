@@ -1,0 +1,71 @@
+import cv2
+import PIL
+import serial
+import numpy as np
+from time import sleep
+x = 0
+y = 0
+s = 0
+arduino_port = 'com6'                    
+baudrate = 9600                            
+ardu = serial.Serial(arduino_port, baudrate, timeout = 0.1)
+
+a = -1
+b = -1
+u = []
+cap = cv2.VideoCapture(0)
+while True:
+
+    _, frame = cap.read()
+    
+    
+    
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    
+    lp = np.array([150,150,50])
+    up = np.array([180,255,150])
+        
+    mask = cv2.inRange(hsv, lp, up)
+    res = cv2.bitwise_and(frame, frame, mask = mask)
+    
+    cv2.imshow('frame', frame)
+    cv2.imshow('mask', mask)
+    cv2.imshow('result', res)
+    
+
+    indices = np.where(mask == [255])
+    z = len(indices[0])
+
+    
+    if z>3500:
+        
+        data = ardu.readline()[:-2] #the last bit gets rid of the new-line chars
+        if data == b'7':
+            
+        
+            for i in indices[1]:
+                x = x + i
+            for t in indices[0]:
+                y = y + t
+            x = x/z
+            x = round(x)
+            y = y/z
+            y = round(y)
+            z = 0
+            print(x,y)
+            if x < 320:
+                ardu.write(b'0')
+                print("left")
+                sleep(5)
+            
+            elif x >=320:
+                ardu.write(b'1')
+                print("right")
+                sleep(5)
+            
+    
+    k = cv2.waitKey(5)
+    
+    
+cv2.destroyAllWindows()
+cap.release()
